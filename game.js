@@ -63,14 +63,31 @@ function CreateGameGrid () {
 		gameGrid.push(gameRow);
 		for (var j = 0; j < 8; j++) {
 			// Column
-			var gameSquare = CreateGameSquare(i, j);
+			var gameSquare = CreateGameSquare(i, j, CreateRandomPiece());
+			gameRow.push(gameSquare);
 		}
 	}
 }
 
-function CreateGameSquare (x, y) {
+function CreateGameSquare (x, y, piece) {
 	return {
 		x: x,
 		y: y,
+		piece: piece,
 	};
+}
+
+function CreateRandomPiece () {
+	return {
+		type: RandomPieceType(),
+		color: RandomPieceColor(),
+	}
+}
+
+function RandomPieceType () {
+	return pieceTypes[Math.floor(Math.random() * pieceTypes.length)];
+}
+
+function RandomPieceColor () {
+	return pieceColors[Math.floor(Math.random() * pieceColors.length)];
 }

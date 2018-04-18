@@ -27,7 +27,9 @@ function Main () {
 	ResizeFunc();
 
 	LoadImages();
+}
 
+function FinishLoadingFunc () {
 	CreateGameGrid();
 }
 
@@ -48,6 +50,7 @@ function LoadImages () {
 		}
 	}
 	PIXI.loader.add(loadArray);
+	PIXI.loader.load(FinishLoadingFunc);
 }
 
 function GetPieceImageFilename (pieceType, pieceColor) {
@@ -63,8 +66,25 @@ function CreateGameGrid () {
 		gameGrid.push(gameRow);
 		for (var j = 0; j < 8; j++) {
 			// Column
+
+			// Create square with random piece in it
 			var gameSquare = CreateGameSquare(i, j, CreateRandomPiece());
 			gameRow.push(gameSquare);
+
+			// Get piece's filename
+			var pieceFilename = GetPieceImageFilename(gameSquare.piece.type, gameSquare.piece.color);
+
+			// Make a sprite for each gameSquare
+			var pieceSprite = new PIXI.Sprite(PIXI.loader.resources[pieceFilename].texture);
+			app.stage.addChild(pieceSprite);
+
+			// Keep reference to sprite
+			gameSquare.sprite = pieceSprite;
+
+			// Set sprite position
+
+			pieceSprite.x = i * 50;
+			pieceSprite.y = j * 50;
 		}
 	}
 }

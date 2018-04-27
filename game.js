@@ -11,6 +11,9 @@ var pieceColors = ["black", "green", "red", "white", "yellow"];
 
 var gameGrid;
 
+var SQUARE_SIZE = 50;
+
+// Things to do before loading game
 function Main () {
 	// console.log("wew");
 
@@ -82,11 +85,11 @@ function CreateGameGrid () {
 			gameSquare.sprite = pieceSprite;
 
 			// Set sprite position
-
-			pieceSprite.x = i * 50;
-			pieceSprite.y = j * 50;
+			pieceSprite.x = i * SQUARE_SIZE;
+			pieceSprite.y = j * SQUARE_SIZE;
 		}
 	}
+	FinishSettingUpGame();
 }
 
 function CreateGameSquare (x, y, piece) {
@@ -94,6 +97,7 @@ function CreateGameSquare (x, y, piece) {
 		x: x,
 		y: y,
 		piece: piece,
+		sprite: undefined,
 	};
 }
 
@@ -110,4 +114,85 @@ function RandomPieceType () {
 
 function RandomPieceColor () {
 	return pieceColors[Math.floor(Math.random() * pieceColors.length)];
+}
+
+var draggingSprite;
+function FinishSettingUpGame () {
+
+	draggingSprite = new PIXI.Sprite();
+	app.stage.addChild(draggingSprite);
+
+	// Mouse input
+	window.addEventListener("mousedown", DoMouseDown);
+	window.addEventListener("mousemove", DoMouseMove);
+	window.addEventListener("mouseup", DoMouseUp);
+	window.addEventListener("contextmenu", DoContextMenu);
+}
+
+var mouseX = 0;
+var mouseY = 0;
+var mousePressed = false;
+var draggedSquare;
+var pieceHeld = false;
+
+function DoMouseDown () {
+
+	mouseX = event.clientX;
+	mouseY = event.clientY;
+	mousePressed = true;
+
+	squareX = Math.floor(mouseX / SQUARE_SIZE);
+	squareY = Math.floor(mouseY / SQUARE_SIZE);
+
+	draggedSquare = GetSquareAtCoord(squareX, squareY);
+
+	// square exists
+	if (draggedSquare !== undefined)
+	{
+		// square has a piece
+		if (draggedSquare.piece !== undefined)
+		{
+			pieceHeld = true;
+			draggedSquare.sprite.alpha = 0.5;
+			draggingSprite.x = mouseX - (SQUARE_SIZE / 2);
+			draggingSprite.y = mouseY - (SQUARE_SIZE / 2);
+			draggingSprite.texture = draggedSquare.sprite.texture;
+			draggingSprite.alpha = 1;
+		}
+	}
+}
+
+function DoMouseMove () {
+	mouseX = event.clientX;
+	mouseY = event.clientY;
+
+	if (pieceHeld)
+	{
+		draggingSprite.x = mouseX - (SQUARE_SIZE / 2);
+		draggingSprite.y = mouseY - (SQUARE_SIZE / 2);
+	}
+}
+
+function DoMouseUp () {
+	if (pieceHeld)
+	{
+		pieceHeld = false
+		draggedSquare.sprite.alpha = 1;
+		draggingSprite.alpha = 0;
+	}
+}
+
+function DoContextMenu () {
+
+}
+
+function GetSquareAtCoord (squareX, squareY) {
+	if (squareX < 0 || squareX > 8 || squareY < 0 || squareY > 8)
+	{
+		return undefined;
+	}
+	else
+	{
+		return gameGrid[squareX][squareY];
+	}
 }

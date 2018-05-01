@@ -219,7 +219,8 @@ function DoMouseUp () {
 		{
 			// Make sure it is a valid chess movement
 			var validMovement = CheckChessMove(draggedSquare, droppedSquare);
-			if (validMovement)
+			// Also check to make sure droppedSquare has a piece in it (prevent moving to empty space)
+			if (validMovement && droppedSquare.piece !== undefined)
 			{
 				// Set dropped square's piece to dragged square's piece
 				droppedSquare.sprite.texture = draggedSquare.sprite.texture;
@@ -382,6 +383,65 @@ function EvaluateMatches () {
 			FinishMatch(matchX, matchY, matchDist, true);
 		}
 	}
+
+
+
+	// Evaluate rows
+	for (var j = 0; j < 8; j++) {
+
+		// var gameRow = gameGrid[i];
+		matching = false;
+		matchDist = 1;
+
+
+		for (var i = 0; i < 8; i++) {
+
+			var gameSquare = gameGrid[i][j];
+			var piece = gameSquare.piece
+
+			// Piece must exist
+			if (piece !== undefined)
+			{
+				if (matching)
+				{
+					if (matchColor === piece.color)
+					{
+						matchDist += 1;
+					}
+					else
+					{
+						if (matchDist >= 3)
+						{
+							FinishMatch(matchX, matchY, matchDist, false);
+						}
+						matchDist = 1;
+					}
+				}
+				matchColor = piece.color;
+				matchX = i;
+				matchY = j;
+				matching = true;
+			}
+			// No piece
+			else
+			{
+				if (matchDist >= 3)
+				{
+					FinishMatch(matchX, matchY, matchDist, false);
+				}
+				matching = false;
+				matchDist = 1;
+			}
+
+
+		}
+		// Finish match at end of row
+		if (matchDist >= 3)
+		{
+			FinishMatch(matchX, matchY, matchDist, false);
+		}
+	}
+
 }
 
 function FinishMatch (matchX, matchY, matchDist, vertical) {

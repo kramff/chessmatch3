@@ -3,3 +3,26 @@
 	margin: 0;
 	padding: 0;
 }
+
+.scorebox {
+	position: absolute;
+	left: 0;
+	top: 406px;
+	width: 100px;
+	padding: 10px;
+	text-align: center;
+	background-color: #e6dada;
+	user-select: none;
+}
+
+.resetbox {
+	position: absolute;
+	left: 0;
+	top: 450px;
+	width: 100px;
+	padding: 10px;
+	text-align: center;
+	background-color: #dea1a1;
+	cursor: pointer;
+	user-select: none;
+}

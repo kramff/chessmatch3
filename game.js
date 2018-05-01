@@ -13,6 +13,11 @@ var gameGrid;
 
 var SQUARE_SIZE = 50;
 
+var scorebox;
+var score = 0;
+
+var resetbox;
+
 // Things to do before loading game
 function Main () {
 	// console.log("wew");
@@ -30,14 +35,38 @@ function Main () {
 	ResizeFunc();
 
 	LoadImages();
+
+	scorebox = document.getElementById("scorebox");
+
+	resetbox = document.getElementById("resetbox");
+
+	resetbox.onclick = ResetFunc;
 }
 
 function FinishLoadingFunc () {
 	CreateGameGrid();
 }
 
+function ResetFunc () {
+	for (var i = 0; i < 8; i++)
+	{
+		for (var j = 0; j < 8; j++)
+		{
+			app.stage.removeChild(gameGrid[i][j].sprite);
+		}
+	}
+	CreateGameGrid();
+	score = 0;
+	UpdateScore();
+}
+
+function UpdateScore () {
+	scorebox.textContent = "Score: " + score;
+}
+
 function ResizeFunc () {
-	app.renderer.resize(window.innerWidth, window.innerHeight);
+	// app.renderer.resize(window.innerWidth, window.innerHeight);
+	app.renderer.resize(400, 400);
 }
 
 function LoadImages () {
@@ -63,11 +92,13 @@ function GetPieceImageFilename (pieceType, pieceColor) {
 
 function CreateGameGrid () {
 	gameGrid = [];
-	for (var i = 0; i < 8; i++) {
+	for (var i = 0; i < 8; i++)
+	{
 		// Row
 		var gameRow = [];
 		gameGrid.push(gameRow);
-		for (var j = 0; j < 8; j++) {
+		for (var j = 0; j < 8; j++)
+		{
 			// Column
 
 			// Create square with random piece in it
@@ -173,12 +204,50 @@ function DoMouseMove () {
 	}
 }
 
+var droppedSquare;
 function DoMouseUp () {
 	if (pieceHeld)
 	{
-		pieceHeld = false
-		draggedSquare.sprite.alpha = 1;
+
+		squareX = Math.floor(mouseX / SQUARE_SIZE);
+		squareY = Math.floor(mouseY / SQUARE_SIZE);
+
+		droppedSquare = GetSquareAtCoord(squareX, squareY);
+		var successfulDrop = false;
+		// Make sure it isn't dropped onto same square
+		if (droppedSquare !== draggedSquare)
+		{
+			// Make sure it is a valid chess movement
+			var validMovement = CheckChessMove(draggedSquare, droppedSquare);
+			if (validMovement)
+			{
+				// Set dropped square's piece to dragged square's piece
+				droppedSquare.sprite.texture = draggedSquare.sprite.texture;
+				droppedSquare.piece = draggedSquare.piece;
+				droppedSquare.sprite.alpha = 1;
+
+				// Set dragged square's piece to nothing
+				draggedSquare.piece = undefined;
+				draggedSquare.sprite.alpha = 0;
+
+				successfulDrop = true;
+
+				// Check for matches here
+				EvaluateMatches();
+			}
+		}
+
+		// Did not drop, return to normal
+		if (!successfulDrop)
+		{
+			draggedSquare.sprite.alpha = 1;	
+		}
+
+
+
+
 		draggingSprite.alpha = 0;
+		pieceHeld = false
 	}
 }
 
@@ -187,7 +256,7 @@ function DoContextMenu () {
 }
 
 function GetSquareAtCoord (squareX, squareY) {
-	if (squareX < 0 || squareX > 8 || squareY < 0 || squareY > 8)
+	if (squareX < 0 || squareX >= 8 || squareY < 0 || squareY >= 8)
 	{
 		return undefined;
 	}
@@ -195,4 +264,141 @@ function GetSquareAtCoord (squareX, squareY) {
 	{
 		return gameGrid[squareX][squareY];
 	}
+}
+
+function CheckChessMove(dragSquare, dropSquare) {
+	var pieceType = dragSquare.piece.type;
+	var moveX = Math.abs(dropSquare.x - dragSquare.x);
+	var moveY = Math.abs(dropSquare.y - dragSquare.y);
+
+	switch (pieceType)
+	{
+		case "king":
+			// King: 1 in any direction
+			if (moveX <= 1 && moveY <= 1)
+			{
+				return true;
+			}
+		break;
+		case "queen":
+			// Queen: Any distance, horizontal or vertical or diagonally
+			if (moveX === 0 || moveY === 0 || moveX === moveY)
+			{
+				return true;
+			}
+		break;
+		case "rook":
+			// Rook: Any distance, horizontal or vertical
+			if (moveX === 0 || moveY === 0)
+			{
+				return true;
+			}
+		break;
+		case "bishop":
+			// Bishop: Any distance, only diagonally
+			if (moveX === moveY)
+			{
+				return true;
+			}
+		break;
+		case "knight":
+			// Knight: 1 Horizontal 2 Vertical, or 2 Horizontal 1 Vertical
+			if ((moveX === 1 && moveY === 2) || (moveX === 2 && moveY === 1))
+			{
+				return true;
+			}
+		break;
+		case "pawn":
+			// Pawn: 1 Diagonally
+			if (moveX === 1 && moveY === 1)
+			{
+				return true;
+			}
+		break;
+	}
+	return false;
+}
+
+function EvaluateMatches () {
+
+	var matchColor;
+	var matchX = 0;
+	var matchY = 0;
+	var matchDist = 1;
+	var matching = false;
+
+	// Evaluate columns
+	for (var i = 0; i < 8; i++) {
+
+		var gameRow = gameGrid[i];
+		matching = false;
+		matchDist = 1;
+
+
+		for (var j = 0; j < 8; j++) {
+
+			var gameSquare = gameRow[j];
+			var piece = gameSquare.piece
+
+			// Piece must exist
+			if (piece !== undefined)
+			{
+				if (matching)
+				{
+					if (matchColor === piece.color)
+					{
+						matchDist += 1;
+					}
+					else
+					{
+						if (matchDist >= 3)
+						{
+							FinishMatch(matchX, matchY, matchDist, true);
+						}
+						matchDist = 1;
+					}
+				}
+				matchColor = piece.color;
+				matchX = i;
+				matchY = j;
+				matching = true;
+			}
+			// No piece
+			else
+			{
+				if (matchDist >= 3)
+				{
+					FinishMatch(matchX, matchY, matchDist, true);
+				}
+				matching = false;
+				matchDist = 1;
+			}
+
+
+		}
+		// Finish match at end of column
+		if (matchDist >= 3)
+		{
+			FinishMatch(matchX, matchY, matchDist, true);
+		}
+	}
+}
+
+function FinishMatch (matchX, matchY, matchDist, vertical) {
+	for (var i = 0; i < matchDist; i++) {
+		var gameSquare;
+		if (vertical)
+		{
+			gameSquare = gameGrid[matchX][matchY - i];
+		}
+		else
+		{
+			gameSquare = gameGrid[matchX - i][matchY];
+		}
+		gameSquare.piece = undefined;
+		gameSquare.sprite.alpha = 0;
+	}
+
+	score += matchDist * 100;
+	UpdateScore();
 }
